@@ -1,0 +1,3 @@
+rootProject.name = 'ametiste-sns'
+include 'ametiste-reports-service'
+

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd">
+
+    <bean id="threadPoolTaskScheduler" class="java.util.concurrent.ScheduledThreadPoolExecutor" destroy-method="shutdown">
+        <constructor-arg value="1" />
+    </bean>
+    
+   <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject">
+			<ref bean="threadPoolTaskScheduler" />
+		</property>
+		<property name="targetMethod">
+			<value>scheduleAtFixedRate</value>
+		</property>
+		<property name="arguments">
+			<list>
+				<ref bean="queueCounter" />
+				<value>0</value>
+				<ref bean="timePeriod" />
+				<ref bean="timeUnits" />
+			</list>
+		</property>
+	</bean>
+
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject">
+            <ref bean="threadPoolTaskScheduler" />
+        </property>
+        <property name="targetMethod">
+            <value>scheduleAtFixedRate</value>
+        </property>
+        <property name="arguments">
+            <list>
+                <ref bean="transientReportsCounter" />
+                <value>0</value>
+                <ref bean="timePeriod" />
+                <ref bean="timeUnits" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="transientReportsCounter" class="org.ametiste.sns.reports.infrastructure.RepositorySizeCounter">
+        <constructor-arg name="reportRepository" ref="reportRepository" />
+        <constructor-arg name="metricsService" ref="metricService" />
+        <constructor-arg name="metricName" value="repositories.transient.reports-count" />
+    </bean>
+
+	<bean id="queueCounter" class="org.ametiste.sns.reports.infrastructure.QueueCounter" >
+		<constructor-arg name="name" value="queue_size" />
+		<constructor-arg name="queue" ref="reportsQueue" />
+		<constructor-arg name="service" ref="metricService" />
+	</bean>
+	
+	<bean id="timePeriod" class="java.lang.Integer">
+		<constructor-arg value="1" />
+	</bean>
+	
+	<util:constant id="timeUnits" static-field="java.util.concurrent.TimeUnit.SECONDS" />
+
+</beans>

@@ -1,0 +1,72 @@
+subprojects {
+    apply plugin: 'maven'
+    apply plugin: 'java'
+    apply plugin: 'idea'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    ext {
+        springVersion = '3.2.4.RELEASE'
+        utilsCommonVersion = '0.1.1-RELEASE'
+    }
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven {
+            url  "http://dl.bintray.com/ametiste-oss/maven"
+        }
+    }
+
+    dependencies {
+        testCompile 'junit:junit:4.11'
+        testCompile 'org.mockito:mockito-all:1.9.5'
+        compile "org.slf4j:slf4j-api:1.7.2"
+    }
+
+    group = 'org.ametiste.sns'
+    version = '0.1.0-SNAPSHOT'
+
+    configurations {
+        deployerJars
+    }
+
+    configurations.all {
+        // check for updates every build
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    }
+
+    javadoc {
+        options {
+            encoding = 'UTF-8'
+        }
+    }
+
+    compileJava.options.encoding = 'UTF-8'
+    compileTestJava.options.encoding = 'UTF-8'
+
+    test.outputs.upToDateWhen {false}
+    test.testLogging.showStandardStreams = true
+
+    test {
+        afterTest { desc, result ->
+            println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+        }
+    }
+
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
+
+configure(rootProject) {
+
+    description = 'AME Simple Notification Service'
+
+    dependencies {
+
+    }
+
+}

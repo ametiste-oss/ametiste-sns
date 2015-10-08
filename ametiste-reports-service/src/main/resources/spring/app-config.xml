@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	
+	<import resource="classpath:spring/ame-ifaces-restful-helpers.xml" />
+	<import resource="classpath:spring/ame-ifaces-http-mappers.xml" />
+
+	<mvc:interceptors>
+		<ref bean="ameRequestIdHeaderAppender"/>
+	</mvc:interceptors>
+	
+    <context:property-placeholder
+    	location="${org.ametiste.reports.settings.dir:classpath:}/multithread-processing.properties"
+    />
+
+	<bean id="suroWrapper" class="org.ametiste.sns.reports.infrastructure.distributer.DistributorServiceAdapter">
+		<constructor-arg value="${org.ametiste.reports.suro.service.url}" />
+		<constructor-arg ref="reportService" />
+	</bean>
+
+	<bean id="reportService" class="org.ametiste.sns.reports.application.SimpleReportService" >
+        <constructor-arg name="reportRepository" ref="reportRepository" />
+	</bean>
+
+	<bean class="org.ametiste.sns.reports.interfaces.facade.ReportFilterBuilder" >
+		<constructor-arg name="timeBuilder" ref="timeBuilder"/>
+	</bean>
+	
+	<bean id="directFacade" class="org.ametiste.sns.reports.interfaces.facade.internal.InternalReportFacade">
+		<property name="reportService" ref="suroWrapper" />
+	</bean>
+	
+	<bean id="timeBuilder" class="org.ametiste.sns.reports.interfaces.facade.TimeIntervalBuilder">
+		<constructor-arg name="formatsList" ref="formatsList" />
+	</bean>
+	
+	<util:list id="formatsList" value-type="java.lang.String">
+		<value>yyyy-MM-dd</value>
+		<value>yyyy-MM-dd HH:mm</value>	
+		<value>yyyy-MM-dd HH:mm:ss</value>
+	</util:list>
+
+    <!-- Transient repository setup -->
+
+    <bean id="_aopProxyTransientRepository" class="org.ametiste.sns.reports.infrastructure.persistence.tnsnt.TransientReportRepository" />
+
+    <bean id="reportRepository" class="org.ametiste.sns.reports.interfaces.spring.TransientRepositorySystemBeanFactory">
+        <property name="repositoryFactory">
+            <bean class="org.ametiste.sns.reports.interfaces.spring.TransientRepositoryProxyFactory">
+                <constructor-arg ref="_aopProxyTransientRepository" />
+            </bean>
+        </property>
+    </bean>
+
+    <!-- - -->
+
+	<bean id="reportDTOAssembler" class="org.ametiste.sns.reports.interfaces.facade.internal.assembler.ReportDTOAssembler" />
+
+	<bean class="org.ametiste.sns.reports.interfaces.facade.internal.InternalReportReader">
+		<property name="reportDTOAssembler" ref="reportDTOAssembler" />
+        <property name="reportRepository" ref="reportRepository" />
+	</bean>	
+
+	<alias name="directFacade" alias="activeFacade" />
+
+	<beans profile="org.ametiste.environment.multithread">
+		
+		<import resource="queue-metric-config.xml"/>
+	
+		<bean id="queueFacade" class="org.ametiste.sns.reports.interfaces.facade.multithread.QueueReportFacade">
+			<constructor-arg name="queue" ref="reportsQueue" />
+		</bean>	
+		
+		<bean id="reportsQueue" class="java.util.concurrent.ArrayBlockingQueue" >
+			<constructor-arg value="${org.ametiste.reports.multithread.reportsqueue.capacity}" />
+		</bean>
+		
+		<bean id="pollThread" class="java.lang.Thread" init-method="start" destroy-method="interrupt">
+	    	<constructor-arg ref="queueReportService"/>
+		</bean>
+		
+		<bean id="queueReportService" class="org.ametiste.sns.reports.interfaces.facade.multithread.QueueReportService">
+			<constructor-arg name="facade" ref="directFacade" />
+			<constructor-arg name="poolSize" value="${org.ametiste.reports.multithread.reportspool.size}" />
+			<constructor-arg name="queue" ref="reportsQueue" />
+		</bean>
+					
+		<alias name="queueFacade" alias="activeFacade" />
+
+	</beans>
+	
+	<beans profile="org.ametiste.environment:test:async">
+		
+		<bean name="delayedFacade" class="org.ametiste.sns.reports.interfaces.facade.multithread.DelayReportFacade">
+			<constructor-arg name="decoratedFacade" ref="queueFacade" />
+		</bean>
+		
+		<alias name="delayedFacade" alias="activeFacade" />
+		
+	</beans>
+	
+</beans>

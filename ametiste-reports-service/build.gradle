@@ -1,0 +1,53 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'http://repo.spring.io/plugins-release' }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE")
+        classpath('org.springframework.build.gradle:propdeps-plugin:0.0.6')
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'propdeps'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+description = "ametiste-reports-service"
+
+version = "0.1.0-SNAPSHOT"
+
+ext {
+    ameIfacesVersion = "0.1.0-RELEASE"
+    ameMetricsVersion = "0.1.0-RELEASE"
+    commonsLangVersion = "2.6"
+    commonsCollectionsVersion = "3.2.1"
+    jodaTimeVersion = "2.2"
+}
+
+dependencies {
+
+    compile "commons-lang:commons-lang:${commonsLangVersion}"
+    compile "commons-collections:commons-collections:${commonsCollectionsVersion}"
+
+    compile "joda-time:joda-time:${jodaTimeVersion}"
+
+    compile("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: "spring-boot-starter-tomcat"
+    }
+
+    // AME Dependencies
+
+    compile "org.ametiste.metrics:metrics-boot:${ameMetricsVersion}"
+
+    compile "org.ametiste.ifaces:ifaces-api:${ameIfacesVersion}"
+    compile "org.ametiste.ifaces:ifaces-facade:${ameIfacesVersion}"
+    compile "org.ametiste.ifaces:ifaces-restful:${ameIfacesVersion}"
+
+}

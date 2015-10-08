@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="
+	    http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+    
+    <context:annotation-config/>
+    	
+	<mvc:annotation-driven>
+	     <mvc:message-converters>
+	        <bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" />
+	     </mvc:message-converters>
+	</mvc:annotation-driven>
+
+    <context:component-scan base-package="org.ametiste.sns.reports.interfaces.restful,org.ametiste.ifaces.restful"/>
+
+    <bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+	  	
+		<property name="useNotAcceptableStatusCode" value="true" />
+		
+		<property name="contentNegotiationManager">
+		      <bean class="org.springframework.web.accept.ContentNegotiationManager">
+		         <constructor-arg>
+		         	<array>
+			            <bean class="org.springframework.web.accept.PathExtensionContentNegotiationStrategy">
+			                 <constructor-arg>
+			                     <map>
+							     	<entry key="html" value="text/html"/>
+							     	<entry key="json" value="application/json"/>
+			                     </map>
+			                 </constructor-arg>
+			            </bean>
+			            <bean class="org.springframework.web.accept.HeaderContentNegotiationStrategy" />
+			            <bean class="org.springframework.web.accept.FixedContentNegotiationStrategy">
+			            	<constructor-arg>
+								<bean class="org.springframework.http.MediaType" factory-method="valueOf">
+									<constructor-arg value="application/json" />
+								</bean>
+			            	</constructor-arg>
+			            </bean>
+		         	</array>
+		         </constructor-arg>
+		      </bean>
+		</property>
+		
+		<property name="defaultViews">
+		  <list>
+		    <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView" />
+		  </list>
+		</property>
+    </bean>
+	
+    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"
+            p:basename="messages"/>
+   
+</beans>
